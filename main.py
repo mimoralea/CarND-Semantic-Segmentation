@@ -42,7 +42,6 @@ def load_vgg(sess, vgg_path):
     l7 = graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
 
     return w1, keep, l3, l4, l7
-
 tests.test_load_vgg(load_vgg, tf)
 
 
@@ -55,8 +54,35 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
-    # TODO: Implement function
-    return None
+    # deconvolution and upsampling of layer 7
+    l7_conv_1x1 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, strides=(1,1), padding='same',
+                                   kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+    l7_upsample = tf.layers.conv2d_transpose(l7_conv_1x1, num_classes, 4, strides=(2,2), padding='same',
+                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+    # repeat with l4 and add the skip layer 7
+    l4_conv_1x1 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, strides=(1,1), padding='same',
+                                   kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+    l7_l4 = tf.add(l7_upsample, l4_conv_1x1)
+    l4_upsample = tf.layers.conv2d_transpose(l7_l4, num_classes, 4, strides=(2,2), padding='same',
+                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+    # repeat with l3
+    l3_conv_1x1 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, strides=(1,1), padding='same',
+                                   kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+    l4_l3 = tf.add(l4_upsample, l3_conv_1x1)
+
+    # this time upscale to the original size
+    l4_upsample = tf.layers.conv2d_transpose(l4_l3, num_classes, 16, strides=(8,8), padding='same',
+                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+    return l4_upsample
 tests.test_layers(layers)
 
 
