@@ -160,15 +160,28 @@ def run():
         # OPTIONAL: Augment Images for better results
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
-        # TODO: Build NN using load_vgg, layers, and optimize function
+        # Build NN using load_vgg, layers, and optimize function
+        input_t, keep_prob_t, l3_out_t, l4_out_t, l7_out_t = load_vgg(sess, vgg_path)
+        output_layer = layers(l3_out_t, l4_out_t, l7_out_t, num_classes)
 
-        # TODO: Train NN using the train_nn function
+        correct_label = tf.placeholder(tf.float32, [None, image_shape[0], image_shape[1], num_classes])
+        learning_rate = tf.placeholder(tf.float32)
+        logits, train_op, cross_entropy_loss = optimize(output_layer, correct_label, learning_rate, num_classes)
 
-        # TODO: Save inference data using helper.save_inference_samples
-        #  helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+        # Train NN using the train_nn function
+        train_nn(sess, num_epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss,
+                 input_image, correct_label, keep_prob, learning_rate)
+
+        # Save inference data using helper.save_inference_samples
+        saver = tf.train.Saver()
+        save_path = saver.save(sess, "./model/model.ckpt")
+        print("Model saved in file: %s" % save_path)
+
+        helper.save_inference_samples(runs_dir, data_dir, sess,
+                                      image_shape, logits, keep_prob, input_image)
+        tf.train.write_graph(sess.graph.as_graph_def(), './model', 'saved_Graph.pb',as_text=False)
 
         # OPTIONAL: Apply the trained model to a video
-
 
 if __name__ == '__main__':
     run()
