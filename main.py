@@ -139,7 +139,7 @@ tests.test_train_nn(train_nn)
 
 def run():
     num_epochs = 25
-    batch_size = 10
+    batch_size = 16
 
     num_classes = 2
     image_shape = (160, 576)
@@ -171,17 +171,20 @@ def run():
         learning_rate = tf.placeholder(tf.float32)
         logits, train_op, cross_entropy_loss = optimize(output_layer, correct_label, learning_rate, num_classes)
 
+        saver = tf.train.Saver()
+        # load pre-trained model from disk
+        saver.restore(sess, "./model/model.ckpt")
+
         # Train NN using the train_nn function
         train_nn(sess, num_epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss,
                  input_t, correct_label, keep_prob_t, learning_rate)
 
         # Save inference data using helper.save_inference_samples
-        saver = tf.train.Saver()
         save_path = saver.save(sess, "./model/model.ckpt")
         print("Model saved in file: %s" % save_path)
 
         helper.save_inference_samples(runs_dir, data_dir, sess,
-                                      image_shape, logits, keep_prob, input_image)
+                                      image_shape, logits, keep_prob_t, input_t)
         tf.train.write_graph(sess.graph.as_graph_def(), './model', 'saved_Graph.pb',as_text=False)
 
         # OPTIONAL: Apply the trained model to a video
