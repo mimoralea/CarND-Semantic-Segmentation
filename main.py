@@ -173,14 +173,16 @@ def run():
 
         saver = tf.train.Saver()
         # load pre-trained model from disk
-        saver.restore(sess, "./model/model.ckpt")
+        checkpoint = tf.train.get_checkpoint_state('./model')
+        if checkpoint and checkpoint.model_checkpoint_path:
+            self.saver.restore(sess, checkpoint.model_checkpoint_path)
 
         # Train NN using the train_nn function
         train_nn(sess, num_epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss,
                  input_t, correct_label, keep_prob_t, learning_rate)
 
         # Save inference data using helper.save_inference_samples
-        save_path = saver.save(sess, "./model/model.ckpt")
+        save_path = saver.save(sess, checkpoint.model_checkpoint_path)
         print("Model saved in file: %s" % save_path)
 
         helper.save_inference_samples(runs_dir, data_dir, sess,
@@ -191,3 +193,4 @@ def run():
 
 if __name__ == '__main__':
     run()
+
