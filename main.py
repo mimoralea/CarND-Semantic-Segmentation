@@ -182,7 +182,7 @@ def run():
                  input_t, correct_label, keep_prob_t, learning_rate)
 
         # Save inference data using helper.save_inference_samples
-        save_path = saver.save(sess, checkpoint.model_checkpoint_path)
+        save_path = saver.save(sess, './model/model.ckpt')
         print("Model saved in file: %s" % save_path)
 
         helper.save_inference_samples(runs_dir, data_dir, sess,
